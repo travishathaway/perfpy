@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from pathlib import Path  # noqa: TC003
 
 import typer
 from pydantic import ValidationError
@@ -11,9 +11,6 @@ from rich import pretty
 from perfpy.profiler import profile
 from perfpy.report import report
 from perfpy.schema import Profile, ProfileCommands
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 app = typer.Typer()
 
