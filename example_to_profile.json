@@ -1,0 +1,13 @@
+{
+  "commands": [
+    {
+      "name":  "sysconfig",
+      "command": "python -m sysconfig"
+    },
+    {
+      "name":  "zen_of_python",
+      "command": "python -m this"
+    }
+  ]
+}
+

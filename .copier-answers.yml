@@ -1,0 +1,13 @@
+_commit: v1.6.0
+_src_path: gh:superlinear-ai/substrate
+author_email: travis.j.hathaway@gmail.com
+author_name: Travis Hathaway
+project_description: Profiles performance of Python scripts and CLI applications
+project_name: perfpy
+project_type: app
+project_url: https://github.com/travishathaway/perfpy
+python_version: 3.10\
+typing: strict
+with_conventional_commits: true
+with_fastapi_api: false
+with_typer_cli: true
