@@ -9,7 +9,7 @@ Profiles performance of Python scripts and CLI applications
 To install this package, run:
 
 ```sh
-pip install perfpy
+pip install git+https://github.com/travishathaway/perfpy.git
 ```
 
 ## Using
