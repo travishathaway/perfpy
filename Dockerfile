@@ -28,7 +28,7 @@ RUN mkdir ~/.history/ && \
     echo 'bind "\"\e[B\": history-search-forward"' >> ~/.bashrc && \
     echo 'eval "$(starship init bash)"' >> ~/.bashrc
 
-FROM python:3.10\-slim AS app
+FROM python:3.10-slim AS app
 
 # Configure Python to print tracebacks on crash [1], and to not buffer stdout and stderr [2].
 # [1] https://docs.python.org/3/using/cmdline.html#envvar-PYTHONFAULTHANDLER
