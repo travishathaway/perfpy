@@ -49,6 +49,9 @@ class Profile(BaseModel):
     #: Max memory usage (KB)
     max_memory_usage: float
 
+    #: Return code of process
+    return_code: int
+
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
 

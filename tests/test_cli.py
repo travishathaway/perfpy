@@ -37,3 +37,4 @@ def test_happy_path_example(tmp_path: Path) -> None:
         for line in csv_reader:
             assert line.get("name") is not None
             assert line.get("command") is not None
+            assert line.get("return_code") == "0"
