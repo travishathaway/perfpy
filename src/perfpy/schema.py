@@ -1,7 +1,6 @@
 """Holds pydantic models (i.e. schemas) for project."""
 
-import sys
-from typing import Any
+from __future__ import annotations
 
 from pydantic import BaseModel
 
@@ -46,15 +45,8 @@ class Profile(BaseModel):
     #: Total time (nanoseconds)
     total_time: int
 
-    #: Max memory usage (KB)
-    max_memory_usage: float
+    #: Max memory usage (bytes)
+    max_memory_usage: int
 
     #: Return code of process
-    return_code: int
-
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
-
-        # Convert max_memory to kilobytes if platform is macOS
-        if sys.platform == "darwin":
-            self.max_memory_usage = self.max_memory_usage * 1024
+    return_code: int | None

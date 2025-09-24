@@ -10,7 +10,7 @@ import contextlib
 import shlex
 import subprocess
 import time
-from collections import namedtuple
+from typing import NamedTuple
 
 import psutil
 
@@ -22,8 +22,14 @@ BYTES_TO_MB = 1024 * 1024
 #: Value used to convert kilobytes to megabytes
 KILOBYTES_TO_MB = 1024
 
-#: Type that mirrors what's in psutil
-CPUTimes = namedtuple('CPUTimes', ['user', 'system', 'children_user', 'children_system'])
+
+class CPUTimes(NamedTuple):
+    """Type that mirrors what's in psutil."""
+
+    user: float
+    system: float
+    children_user: float
+    children_system: float
 
 
 def _wrap_psutil(pid: int) -> psutil.Process | None:
@@ -49,7 +55,7 @@ def _sum_rss_bytes(proc: psutil.Process, *, include_children: bool) -> int:
 def _cpu_times(proc: psutil.Process) -> CPUTimes:
     """Return current cpu_times for proc, or zeroed values if unavailable."""
     with contextlib.suppress(psutil.NoSuchProcess, psutil.AccessDenied):
-        return proc.cpu_times()
+        return CPUTimes(*proc.cpu_times())
     return CPUTimes(0.0, 0.0, 0.0, 0.0)
 
 
@@ -91,7 +97,7 @@ def run_and_monitor(
     *,
     include_children: bool = True,
     timeout: float | None = None,
-) -> tuple[int, int, CPUTimes]:
+) -> tuple[int | None, int, CPUTimes]:
     """
     Start a process, poll until it completes, and monitor RSS memory usage.
 
@@ -106,13 +112,13 @@ def run_and_monitor(
         (return_code, peak_rss_bytes, peak_cpu_times)
     """
     # Normalize command (allowing callers to pass a shell string would be easy: shlex.split)
-    proc = subprocess.Popen(command) # noqa: S603
+    proc = subprocess.Popen(command)  # noqa: S603
     ps_proc = _wrap_psutil(proc.pid)
 
     if ps_proc is None:
         # The process exited immediately.
-        rc = proc.wait()
-        return rc, 0, _zero_cpu()
+        proc.wait()
+        return proc.returncode, 0, _zero_cpu()
 
     start = time.time()
     peak_rss = 0
@@ -120,10 +126,10 @@ def run_and_monitor(
 
     try:
         while True:
-            rc = proc.poll() # noqa: mypy
+            proc.poll()
 
             # Sample current metrics
-            current_rss = _sum_rss_bytes(ps_proc, include_children = include_children)
+            current_rss = _sum_rss_bytes(ps_proc, include_children=include_children)
             peak_rss = peak_rss + current_rss
             current_cpu = _cpu_times(ps_proc)
 
@@ -133,7 +139,7 @@ def run_and_monitor(
                 peak_cpu = current_cpu
 
             # Exit conditions
-            if rc is not None:
+            if proc.returncode is not None:
                 break
 
             if _timed_out(start, timeout):
@@ -173,7 +179,7 @@ def profile(command: Command) -> Profile:
     bytes_recv = net_io_stats_after.bytes_recv - net_io_stats_before.bytes_recv
     bytes_sent = net_io_stats_after.bytes_sent - net_io_stats_before.bytes_sent
 
-    total_time = round(time_after - time_before, ndigits=2)
+    total_time = time_after - time_before
 
     return Profile(
         name=command.name,
