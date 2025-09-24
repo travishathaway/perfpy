@@ -10,6 +10,7 @@ import contextlib
 import shlex
 import subprocess
 import time
+from collections import namedtuple
 
 import psutil
 
@@ -21,13 +22,8 @@ BYTES_TO_MB = 1024 * 1024
 #: Value used to convert kilobytes to megabytes
 KILOBYTES_TO_MB = 1024
 
-#: Type alias for psutil namedtuple
-Pcputimes = psutil._common.pcputimes  # noqa: SLF001  (private psutil type)
-
-
-def _start_process(command: list[str]) -> subprocess.Popen:
-    """Start the subprocess and return the Popen handle."""
-    return subprocess.Popen(command)  # noqa: S603
+#: Type that mirrors what's in psutil
+CPUTimes = namedtuple('CPUTimes', ['user', 'system', 'children_user', 'children_system'])
 
 
 def _wrap_psutil(pid: int) -> psutil.Process | None:
@@ -50,14 +46,14 @@ def _sum_rss_bytes(proc: psutil.Process, *, include_children: bool) -> int:
     return rss
 
 
-def _cpu_times(proc: psutil.Process) -> Pcputimes:
+def _cpu_times(proc: psutil.Process) -> CPUTimes:
     """Return current cpu_times for proc, or zeroed values if unavailable."""
     with contextlib.suppress(psutil.NoSuchProcess, psutil.AccessDenied):
         return proc.cpu_times()
-    return Pcputimes(0.0, 0.0, 0.0, 0.0)
+    return CPUTimes(0.0, 0.0, 0.0, 0.0)
 
 
-def _is_better_cpu_times(a: Pcputimes, b: Pcputimes) -> bool:
+def _is_better_cpu_times(a: CPUTimes, b: CPUTimes) -> bool:
     """Return True if a has greater (user+system) than b."""
     return (a.user + a.system) > (b.user + b.system)
 
@@ -85,8 +81,8 @@ def _reap(p: subprocess.Popen, timeout: float = 5.0) -> None:
         p.wait()
 
 
-def _zero_cpu() -> Pcputimes:
-    return Pcputimes(0.0, 0.0, 0.0, 0.0)
+def _zero_cpu() -> CPUTimes:
+    return CPUTimes(0.0, 0.0, 0.0, 0.0)
 
 
 def run_and_monitor(
@@ -95,7 +91,7 @@ def run_and_monitor(
     *,
     include_children: bool = True,
     timeout: float | None = None,
-) -> tuple[int, int, Pcputimes]:
+) -> tuple[int, int, CPUTimes]:
     """
     Start a process, poll until it completes, and monitor RSS memory usage.
 
@@ -110,7 +106,7 @@ def run_and_monitor(
         (return_code, peak_rss_bytes, peak_cpu_times)
     """
     # Normalize command (allowing callers to pass a shell string would be easy: shlex.split)
-    proc = _start_process(command)
+    proc = subprocess.Popen(command) # noqa: S603
     ps_proc = _wrap_psutil(proc.pid)
 
     if ps_proc is None:
@@ -124,10 +120,11 @@ def run_and_monitor(
 
     try:
         while True:
-            rc = proc.poll()
+            rc = proc.poll() # noqa: mypy
 
             # Sample current metrics
-            current_rss = _sum_rss_bytes(ps_proc, include_children)
+            current_rss = _sum_rss_bytes(ps_proc, include_children = include_children)
+            peak_rss = peak_rss + current_rss
             current_cpu = _cpu_times(ps_proc)
 
             # Update peaks

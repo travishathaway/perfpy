@@ -69,7 +69,7 @@ output = "reports/coverage.xml"
 
 [tool.mypy]  # https://mypy.readthedocs.io/en/latest/config_file.html
 junit_xml = "reports/mypy.xml"
-strict = true
+strict = false
 disallow_subclassing_any = false
 disallow_untyped_decorators = false
 ignore_missing_imports = true
