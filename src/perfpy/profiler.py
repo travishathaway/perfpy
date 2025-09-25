@@ -125,10 +125,9 @@ def run_and_monitor(
 
             # Sample current metrics
             current_rss = _sum_rss_bytes(ps_proc, include_children=include_children)
-            peak_rss = peak_rss + current_rss
             current_cpu = _cpu_times(ps_proc)
 
-            # Update peaks
+            # Update peak values
             peak_rss = max(peak_rss, current_rss)
             if _is_better_cpu_times(current_cpu, peak_cpu):
                 peak_cpu = current_cpu
