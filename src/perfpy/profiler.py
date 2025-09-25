@@ -28,8 +28,6 @@ class CPUTimes(NamedTuple):
 
     user: float
     system: float
-    children_user: float
-    children_system: float
 
 
 def _wrap_psutil(pid: int) -> psutil.Process | None:
@@ -55,8 +53,9 @@ def _sum_rss_bytes(proc: psutil.Process, *, include_children: bool) -> int:
 def _cpu_times(proc: psutil.Process) -> CPUTimes:
     """Return current cpu_times for proc, or zeroed values if unavailable."""
     with contextlib.suppress(psutil.NoSuchProcess, psutil.AccessDenied):
-        return CPUTimes(*proc.cpu_times())
-    return CPUTimes(0.0, 0.0, 0.0, 0.0)
+        psutil_cpu_times = proc.cpu_times()
+        return CPUTimes(psutil_cpu_times.user, psutil_cpu_times.system)
+    return CPUTimes(0.0, 0.0)
 
 
 def _is_better_cpu_times(a: CPUTimes, b: CPUTimes) -> bool:
@@ -87,10 +86,6 @@ def _reap(p: subprocess.Popen, timeout: float = 5.0) -> None:
         p.wait()
 
 
-def _zero_cpu() -> CPUTimes:
-    return CPUTimes(0.0, 0.0, 0.0, 0.0)
-
-
 def run_and_monitor(
     command: list[str],
     interval: float = 0.5,
@@ -118,11 +113,11 @@ def run_and_monitor(
     if ps_proc is None:
         # The process exited immediately.
         proc.wait()
-        return proc.returncode, 0, _zero_cpu()
+        return proc.returncode, 0, CPUTimes(0.0, 0.0)
 
     start = time.time()
     peak_rss = 0
-    peak_cpu = _zero_cpu()
+    peak_cpu = CPUTimes(0.0, 0.0)
 
     try:
         while True:
